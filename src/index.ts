@@ -42,6 +42,16 @@ const main = async () => {
   // Express app
   const app = express();
 
+  app.set('trust proxy', 1);
+
+  // Express cors middleware
+  app.use(
+    cors({
+      origin: __origin__,
+      credentials: true,
+    })
+  );
+
   app.use(
     session({
       store: new SQLiteStore({
@@ -52,15 +62,8 @@ const main = async () => {
       secret: __secret__!,
       resave: false,
       saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        secure: __prod__,
-        maxAge: 1000 * 60 * 60 * 24 * 7 * 365, // 7 years
-      },
     })
   );
-
-  app.set('trust proxy', 1);
 
   app.use(express.json());
 
@@ -69,13 +72,6 @@ const main = async () => {
   app.use(
     express.urlencoded({
       extended: true,
-    })
-  );
-  // Express cors middleware
-  app.use(
-    cors({
-      origin: __origin__,
-      credentials: true,
     })
   );
 

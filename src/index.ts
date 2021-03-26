@@ -29,7 +29,10 @@ const main = async () => {
     'Successfully connected to database: ' + connection.name
   );
 
+  // Express app
   const app = express();
+
+  app.set('trust proxy', 1);
 
   app.use(express.json());
 
@@ -82,7 +85,7 @@ const main = async () => {
     cors: false,
   });
 
-  app.listen(__port__, () => {
+  app.listen(__port__ || 4000, () => {
     logger.log(
       LogLevel.INFO,
       'Successfully started Todofy Server on port ' + __port__

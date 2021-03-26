@@ -11,7 +11,7 @@ export const __port__ = parseInt(process.env.PORT) || 4000;
 /**
  * Return the cookie name used on express session.
  */
-export const __cookie__ = 'todofy-cookie';
+export const __cookie__: string = 'todofy-cookie';
 
 /**
  * Return the origin uri.
@@ -26,3 +26,8 @@ export const __origin__ = __prod__
 export const __secret__ = __prod__
   ? process.env.SESSION_SECRET
   : 'Lu4g0zTbPakiHx1RIAKx';
+
+/**
+ * Database URL used in production
+ */
+export const __dbUrl__ = process.env.DATABASE_URL;

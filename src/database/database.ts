@@ -8,7 +8,7 @@ import { __dbUrl__, __prod__ } from '../utils/constants';
  */
 export const databaseOptions = async () => {
   let connOptions: ConnectionOptions;
-  if (__prod__) {
+  if (!__prod__) {
     connOptions = {
       type: 'postgres',
       host: 'localhost',

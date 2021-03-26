@@ -1,0 +1,1 @@
+export { validateUserRegistration } from './validateUserRegistration';

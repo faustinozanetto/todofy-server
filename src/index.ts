@@ -8,6 +8,9 @@ import { TestResolver, TodoResolver, UserResolver } from './resolvers/index';
 import { Logger, LogLevel } from './logger/index';
 import { databaseOptions } from './database/index';
 import { createConnection } from 'typeorm';
+import session from 'express-session';
+//@ts-ignore
+import connectSqlite3 from 'connect-sqlite3';
 import {
   __cookie__,
   __origin__,
@@ -23,6 +26,7 @@ import { createAccessToken, createRefreshToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
 
 dotenv.config();
+const SQLiteStore = connectSqlite3(session);
 
 export const logger = new Logger('Todofy | ');
 
@@ -37,6 +41,24 @@ const main = async () => {
 
   // Express app
   const app = express();
+
+  app.use(
+    session({
+      store: new SQLiteStore({
+        db: 'database.sqlite',
+        concurrentDB: true,
+      }),
+      name: 'qid',
+      secret: __secret__!,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: __prod__,
+        maxAge: 1000 * 60 * 60 * 24 * 7 * 365, // 7 years
+      },
+    })
+  );
 
   app.set('trust proxy', 1);
 
@@ -128,7 +150,11 @@ const main = async () => {
       validate: false,
     }),
     introspection: true,
-    playground: true,
+    playground: {
+      settings: {
+        'request.credentials': 'include',
+      },
+    },
     context: ({ req, res }) => ({ req, res }),
   });
 

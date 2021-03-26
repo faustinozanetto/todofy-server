@@ -10,9 +10,9 @@ import { logger } from '../index';
 import { LogLevel } from '../logger';
 import { __cookie__, __secret__ } from '../utils/constants';
 import { TodosResponse } from '../responses/todo/Todos';
-import { sendRefreshToken } from '../auth/sendRefreshToken';
-import { createAccessToken, createRefreshToken } from '../auth/auth';
-import * as jwt from 'jsonwebtoken';
+//import { sendRefreshToken } from '../auth/sendRefreshToken';
+//import { createAccessToken, createRefreshToken } from '../auth/auth';
+//import * as jwt from 'jsonwebtoken';
 
 @Resolver()
 export class UserResolver {
@@ -93,7 +93,7 @@ export class UserResolver {
   async login(
     @Arg('username') username: string,
     @Arg('password') password: string,
-    @Ctx() { res }: TodofyContext
+    @Ctx() { req }: TodofyContext
   ): Promise<LoginResponse> {
     const user = await User.findOne({ where: { username } });
 
@@ -117,9 +117,16 @@ export class UserResolver {
       };
     }
 
+    /*
     sendRefreshToken(res, createRefreshToken(user));
 
     return { user, accessToken: createAccessToken(user) };
+    */
+    req.session!.userId = user.id;
+
+    return {
+      user,
+    };
   }
 
   /**
@@ -128,21 +135,22 @@ export class UserResolver {
    * @returns True or False wether logout was successful or not.
    */
   @Mutation(() => Boolean)
-  async logout(@Ctx() { res }: TodofyContext) {
-    /* return new Promise<boolean>((resolve) => {
-      req.session.destroy((error: any) => {
-        res.clearCookie(__cookie__);
-        if (error) {
-          logger.log(LogLevel.ERROR, error);
-          resolve(error);
-          return;
+  async logout(@Ctx() ctx: TodofyContext): Promise<Boolean> {
+    return new Promise((res, rej) =>
+      ctx.req.session!.destroy((err) => {
+        if (err) {
+          console.log(err);
+          return rej(false);
         }
-        resolve(true);
-      });
-    });
-    */
+
+        ctx.res.clearCookie('qid');
+        return res(true);
+      })
+    );
+    /*
     sendRefreshToken(res, '');
     return true;
+    */
   }
 
   /**
@@ -151,6 +159,7 @@ export class UserResolver {
    */
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req }: TodofyContext) {
+    /*
     const authorization = req.headers['authorization'];
     if (!authorization) {
       return null;
@@ -162,7 +171,13 @@ export class UserResolver {
     } catch (error) {
       logger.log(LogLevel.ERROR, error);
       return null;
+    }*/
+
+    if (!req.session!.userId) {
+      return undefined;
     }
+
+    return User.findOne(req.session!.userId);
   }
 
   /**

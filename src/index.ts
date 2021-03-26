@@ -59,6 +59,11 @@ const main = async () => {
 
   app.get('/', (_req, res) => res.send('hello'));
   app.post('/refresh_token', async (req, res) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept'
+    );
     const token = req.cookies.jid;
     if (!token) {
       return res.send({
@@ -111,7 +116,7 @@ const main = async () => {
     sendRefreshToken(res, createRefreshToken(user));
 
     return res.send({
-      succeed: true,
+      succeed: false,
       message: 'Successfully created access token!',
       accessToken: createAccessToken(user),
     });

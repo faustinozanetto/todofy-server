@@ -10,7 +10,13 @@ import { TestResolver, TodoResolver, UserResolver } from './resolvers/index';
 import { Logger, LogLevel } from './logger/index';
 import { databaseOptions } from './database/index';
 import { createConnection } from 'typeorm';
-import { __cookie__, __port__, __prod__, __secret__ } from './utils/constants';
+import {
+  __cookie__,
+  __origin__,
+  __port__,
+  __prod__,
+  __secret__,
+} from './utils/constants';
 
 export const logger = new Logger('Todofy | ');
 
@@ -35,7 +41,7 @@ const main = async () => {
   // Express cors middleware
   app.use(
     cors({
-      origin: __prod__ ? '' : 'http://localhost:3000',
+      origin: __origin__,
       credentials: true,
     })
   );

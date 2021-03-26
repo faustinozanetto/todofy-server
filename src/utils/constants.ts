@@ -14,6 +14,13 @@ export const __port__ = process.env.PORT || 4000;
 export const __cookie__ = 'todofy-cookie';
 
 /**
+ * Return the origin uri.
+ */
+export const __origin__ = __prod__
+  ? process.env.CORS_ORIGIN
+  : 'http://localhost:3000';
+
+/**
  * Returns the secret used for express session.
  */
 export const __secret__ = __prod__

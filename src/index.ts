@@ -61,15 +61,26 @@ const main = async () => {
   app.post('/refresh_token', async (req, res) => {
     const token = req.cookies.jid;
     if (!token) {
-      return res.send({ ok: false, accessToken: '' });
+      return res.send({
+        succeed: false,
+        message: 'Could not find token',
+        accessToken: '',
+      });
     }
 
     let payload: any = null;
     try {
       payload = jwt.verify(token, __refreshSecret__!);
     } catch (err) {
-      console.log(err);
-      return res.send({ ok: false, accessToken: '' });
+      logger.log(
+        LogLevel.ERROR,
+        'An error occurred while trying to get payload'
+      );
+      return res.send({
+        succeed: false,
+        message: 'An error occurred while trying to get payload',
+        accessToken: '',
+      });
     }
 
     // token is valid and
@@ -78,7 +89,11 @@ const main = async () => {
 
     if (!user) {
       logger.log(LogLevel.ERROR, 'User not found');
-      return res.send({ ok: false, accessToken: '' });
+      return res.send({
+        succeed: false,
+        message: 'Could not find user',
+        accessToken: '',
+      });
     }
 
     if (user.tokenVersion !== payload.tokenVersion) {
@@ -86,12 +101,20 @@ const main = async () => {
         LogLevel.ERROR,
         'User token version different from payload version!'
       );
-      return res.send({ ok: false, accessToken: '' });
+      return res.send({
+        succeed: false,
+        message: 'User token version different from payload version!',
+        accessToken: '',
+      });
     }
 
     sendRefreshToken(res, createRefreshToken(user));
 
-    return res.send({ ok: true, accessToken: createAccessToken(user) });
+    return res.send({
+      succeed: true,
+      message: 'Successfully created access token!',
+      accessToken: createAccessToken(user),
+    });
   });
 
   const apolloServer = new ApolloServer({

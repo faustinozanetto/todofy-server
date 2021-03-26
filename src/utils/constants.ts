@@ -35,6 +35,11 @@ export const __refreshSecret__ = __prod__
   : 'Lu4g0zTb5454sd6Hx1RIAKx';
 
 /**
+ * Redis URI used for sessions
+ */
+export const __redis__ = __prod__ ? process.env.REDIS : '127.0.0.1:6379';
+
+/**
  * Database URL used in production
  */
 export const __dbUrl__ = process.env.DATABASE_URL;

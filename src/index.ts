@@ -16,17 +16,21 @@ import {
   __origin__,
   __port__,
   __prod__,
+  __redis__,
   __refreshSecret__,
   __secret__,
 } from './utils/constants';
-import * as jwt from 'jsonwebtoken';
+//import * as jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+/*
 import { User } from './entities';
 import { createAccessToken, createRefreshToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
+*/
+import connectRedis from 'connect-redis';
+import Redis from 'ioredis';
 
 dotenv.config();
-const SQLiteStore = connectSqlite3(session);
 
 export const logger = new Logger('Todofy | ');
 
@@ -41,6 +45,18 @@ const main = async () => {
 
   // Express app
   const app = express();
+  const RedisStore = connectRedis(session);
+  let redis: Redis.Redis;
+
+  if (!__prod__) {
+    redis = new Redis(__redis__);
+  } else {
+    redis = new Redis({
+      host: process.env.REDIS!,
+      port: 16289,
+      password: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
+    });
+  }
 
   app.set('trust proxy', 1);
 
@@ -54,14 +70,21 @@ const main = async () => {
 
   app.use(
     session({
-      store: new SQLiteStore({
-        db: 'database.sqlite',
-        concurrentDB: true,
+      name: __cookie__,
+      store: new RedisStore({
+        client: redis,
+        disableTouch: true,
       }),
-      name: 'qid',
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
+        httpOnly: true,
+        sameSite: 'lax', // csrf
+        secure: __prod__, // cookie only works in https
+        domain: __prod__ ? '.codeponder.com' : undefined,
+      },
+      saveUninitialized: false,
       secret: __secret__!,
       resave: false,
-      saveUninitialized: false,
     })
   );
 
@@ -75,6 +98,7 @@ const main = async () => {
     })
   );
 
+  /*
   app.get('/', (_req, res) => res.send('hello'));
   app.post('/refresh_token', async (req, res) => {
     res.header('Access-Control-Allow-Origin', req.headers.origin);
@@ -140,6 +164,7 @@ const main = async () => {
     });
   });
 
+  */
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
       resolvers: [TestResolver, UserResolver, TodoResolver],
@@ -151,7 +176,7 @@ const main = async () => {
         'request.credentials': 'include',
       },
     },
-    context: ({ req, res }) => ({ req, res }),
+    context: ({ req, res }) => ({ req, res, redis }),
   });
 
   apolloServer.applyMiddleware({

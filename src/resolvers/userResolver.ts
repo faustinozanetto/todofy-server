@@ -39,7 +39,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg('input') input: UserCredentialsInput,
-    @Ctx() {}: TodofyContext
+    @Ctx() { req }: TodofyContext
   ): Promise<UserResponse> {
     const errors = validateUserRegistration(input);
     if (errors) {
@@ -78,6 +78,8 @@ export class UserResolver {
         };
       }
     }
+
+    req.session.userId = user.id;
 
     return { user };
   }
@@ -122,7 +124,7 @@ export class UserResolver {
 
     return { user, accessToken: createAccessToken(user) };
     */
-    req.session!.userId = user.id;
+    req.session.userId = user.id;
 
     return {
       user,
@@ -135,22 +137,19 @@ export class UserResolver {
    * @returns True or False wether logout was successful or not.
    */
   @Mutation(() => Boolean)
-  async logout(@Ctx() ctx: TodofyContext): Promise<Boolean> {
-    return new Promise((res, rej) =>
-      ctx.req.session!.destroy((err) => {
+  async logout(@Ctx() { req, res }: TodofyContext): Promise<Boolean> {
+    return new Promise((resolve) =>
+      req.session.destroy((err) => {
+        res.clearCookie(__cookie__);
         if (err) {
           console.log(err);
-          return rej(false);
+          resolve(false);
+          return;
         }
 
-        ctx.res.clearCookie('qid');
-        return res(true);
+        resolve(true);
       })
     );
-    /*
-    sendRefreshToken(res, '');
-    return true;
-    */
   }
 
   /**
@@ -173,11 +172,11 @@ export class UserResolver {
       return null;
     }*/
 
-    if (!req.session!.userId) {
-      return undefined;
+    if (!req.session.userId) {
+      return null;
     }
 
-    return User.findOne(req.session!.userId);
+    return User.findOne(req.session.userId);
   }
 
   /**

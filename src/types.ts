@@ -9,4 +9,5 @@ export type TodofyContext = {
     session: Session & Partial<SessionData> & { userId: number };
   };
   res: Response;
+  payload?: { userId: string };
 };

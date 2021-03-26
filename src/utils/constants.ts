@@ -6,7 +6,7 @@ export const __prod__: boolean = process.env.NODE_ENV === 'production';
 /**
  * Returns the port used on production
  */
-export const __port__ = parseInt(process.env.PORT) || 4000;
+export const __port__ = process.env.PORT || 4000;
 
 /**
  * Return the cookie name used on express session.
@@ -24,8 +24,15 @@ export const __origin__ = __prod__
  * Returns the secret used for express session.
  */
 export const __secret__ = __prod__
-  ? process.env.SESSION_SECRET
+  ? process.env.SESSION_TOKEN
   : 'Lu4g0zTbPakiHx1RIAKx';
+
+/**
+ * Returns the secret used for refresh session.
+ */
+export const __refreshSecret__ = __prod__
+  ? process.env.REFRESH_TOKEN_SECRET
+  : 'Lu4g0zTb5454sd6Hx1RIAKx';
 
 /**
  * Database URL used in production

@@ -1,12 +1,9 @@
-import { ObjectType, Field } from 'type-graphql';
 import { User } from '../../entities';
+import { ObjectType, Field } from 'type-graphql';
 import { FieldError } from '.';
 
-/**
- * Response used when running User Related queries.
- */
 @ObjectType()
-export class UserResponse {
+export class LoginResponse {
   /**
    * Error
    */
@@ -18,4 +15,7 @@ export class UserResponse {
    */
   @Field(() => User, { nullable: true })
   user?: User;
+
+  @Field(() => String, { nullable: true })
+  accessToken?: string;
 }

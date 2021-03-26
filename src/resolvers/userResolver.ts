@@ -1,5 +1,5 @@
 import { Arg, Ctx, Int, Mutation, Query, Resolver } from 'type-graphql';
-import { UsersResponse, UserResponse } from '../responses/user';
+import { UsersResponse, UserResponse, LoginResponse } from '../responses/user';
 import { getConnection, getRepository } from 'typeorm';
 import { TodofyContext } from 'types';
 import { User } from '../entities';
@@ -7,10 +7,12 @@ import { validateUserRegistration } from '../utils';
 import { UserCredentialsInput } from '../inputs';
 import argon2 from 'argon2';
 import { logger } from '../index';
-import { sign } from 'jsonwebtoken';
 import { LogLevel } from '../logger';
 import { __cookie__, __secret__ } from '../utils/constants';
 import { TodosResponse } from '../responses/todo/Todos';
+import { sendRefreshToken } from '../auth/sendRefreshToken';
+import { createAccessToken, createRefreshToken } from '../auth/auth';
+import * as jwt from 'jsonwebtoken';
 
 @Resolver()
 export class UserResolver {
@@ -37,7 +39,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg('input') input: UserCredentialsInput,
-    @Ctx() { req }: TodofyContext
+    @Ctx() {}: TodofyContext
   ): Promise<UserResponse> {
     const errors = validateUserRegistration(input);
     if (errors) {
@@ -77,17 +79,6 @@ export class UserResolver {
       }
     }
 
-    const auth = sign(
-      { id: user.id, email: user.email },
-      'mrFFmHzpWNVPLGIm71rEmTtT23dL8r',
-      {
-        expiresIn: '24h',
-      }
-    );
-
-    console.log({ auth });
-    req.session.userId = user.id;
-
     return { user };
   }
 
@@ -98,12 +89,12 @@ export class UserResolver {
    * @param ctx Todofy Context
    * @returns If credentials are correct, return the User
    */
-  @Mutation(() => UserResponse)
+  @Mutation(() => LoginResponse)
   async login(
     @Arg('username') username: string,
     @Arg('password') password: string,
-    @Ctx() { req }: TodofyContext
-  ): Promise<UserResponse> {
+    @Ctx() { res }: TodofyContext
+  ): Promise<LoginResponse> {
     const user = await User.findOne({ where: { username } });
 
     // Username does not exist.
@@ -126,17 +117,9 @@ export class UserResolver {
       };
     }
 
-    req.session.userId = user.id;
+    sendRefreshToken(res, createRefreshToken(user));
 
-    const auth = sign(
-      { id: user.id, email: user.email },
-      'mrFFmHzpWNVPLGIm71rEmTtT23dL8r',
-      { expiresIn: '24h' }
-    );
-
-    console.log({ auth });
-
-    return { user };
+    return { user, accessToken: createAccessToken(user) };
   }
 
   /**
@@ -145,8 +128,8 @@ export class UserResolver {
    * @returns True or False wether logout was successful or not.
    */
   @Mutation(() => Boolean)
-  async logout(@Ctx() { req, res }: TodofyContext) {
-    return new Promise<boolean>((resolve) => {
+  async logout(@Ctx() { res }: TodofyContext) {
+    /* return new Promise<boolean>((resolve) => {
       req.session.destroy((error: any) => {
         res.clearCookie(__cookie__);
         if (error) {
@@ -157,6 +140,9 @@ export class UserResolver {
         resolve(true);
       });
     });
+    */
+    sendRefreshToken(res, '');
+    return true;
   }
 
   /**
@@ -165,11 +151,18 @@ export class UserResolver {
    */
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req }: TodofyContext) {
-    const userId = req.session.userId;
-    if (!userId) {
+    const authorization = req.headers['authorization'];
+    if (!authorization) {
       return null;
     }
-    return User.findOne(userId);
+    try {
+      const token = authorization.split(' ')[1];
+      const payload: any = jwt.verify(token, __secret__!);
+      return User.findOne(payload.userId);
+    } catch (error) {
+      logger.log(LogLevel.ERROR, error);
+      return null;
+    }
   }
 
   /**

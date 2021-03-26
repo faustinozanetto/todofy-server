@@ -31,6 +31,9 @@ export class User extends BaseEntity {
   @OneToMany(() => Todo, (todo: Todo) => todo.user)
   todos: Array<Todo>;
 
+  @Column('int', { default: 0 })
+  tokenVersion: number;
+
   @Field(() => String)
   @CreateDateColumn()
   createdAt: Date;

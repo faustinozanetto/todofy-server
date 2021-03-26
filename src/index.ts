@@ -47,16 +47,22 @@ const main = async () => {
   const app = express();
   const RedisStore = connectRedis(session);
   let redis: Redis.Redis;
+  redis = new Redis(__redis__);
 
-  if (!__prod__) {
-    redis = new Redis(__redis__);
-  } else {
-    redis = new Redis({
-      host: process.env.REDIS!,
-      port: 16289,
-      password: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
-    });
-  }
+  // if (!__prod__) {
+  //   redis = new Redis({
+  //     host: 'redis-16289.c239.us-east-1-2.ec2.cloud.redislabs.com:16289',
+  //     password: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
+  //     sentinelPassword: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
+  //     name: 'todofy-session',
+  //   });
+  // } else {
+  //   redis = new Redis({
+  //     host: process.env.REDIS!,
+  //     port: 16289,
+  //     password: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
+  //   });
+  // }
 
   app.set('trust proxy', 1);
 

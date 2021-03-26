@@ -77,10 +77,15 @@ const main = async () => {
     const user = await User.findOne({ id: payload.userId });
 
     if (!user) {
+      logger.log(LogLevel.ERROR, 'User not found');
       return res.send({ ok: false, accessToken: '' });
     }
 
     if (user.tokenVersion !== payload.tokenVersion) {
+      logger.log(
+        LogLevel.ERROR,
+        'User token version different from payload version!'
+      );
       return res.send({ ok: false, accessToken: '' });
     }
 

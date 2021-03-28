@@ -16,7 +16,7 @@ import { UserCredentialsInput } from '../inputs';
 import argon2 from 'argon2';
 import { logger } from '../index';
 import { LogLevel } from '../logger';
-import { verify } from 'jsonwebtoken';
+import { Secret, verify } from 'jsonwebtoken';
 import { __cookie__, __secret__ } from '../utils/constants';
 import { TodosResponse } from '../responses/todo/Todos';
 import { sendRefreshToken } from '../auth/sendRefreshToken';
@@ -148,7 +148,11 @@ export class UserResolver {
 
     // login successful
 
-    sendRefreshToken(res, createRefreshToken(user));
+    try {
+      sendRefreshToken(res, createRefreshToken(user));
+    } catch (err) {
+      throw new Error(err);
+    }
 
     return {
       accessToken: createAccessToken(user),
@@ -216,7 +220,10 @@ export class UserResolver {
 
     try {
       const token = authorization.split(' ')[1];
-      const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!);
+      const payload: any = verify(
+        token,
+        process.env.ACCESS_TOKEN_SECRET as Secret
+      );
       console.log('Payload', payload);
       return await User.findOne({ where: { id: payload.userId } });
     } catch (err) {

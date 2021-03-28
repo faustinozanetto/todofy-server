@@ -20,19 +20,19 @@ import {
 import dotenv from 'dotenv';
 import passport from 'passport';
 import { buildContext } from 'graphql-passport';
-import Redis from 'ioredis';
 import { User } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
-import { verify } from 'jsonwebtoken';
-
-dotenv.config();
+import { Secret, verify } from 'jsonwebtoken';
 
 export const logger = new Logger('Todofy | ');
 
 const main = async () => {
+  dotenv.config();
   const options = await databaseOptions();
   const connection = await createConnection(options);
+
+  console.log(process.env);
 
   logger.log(
     LogLevel.INFO,
@@ -41,25 +41,6 @@ const main = async () => {
 
   // Express app
   const app = express();
-  //app.use(passport.initialize());
-  //const RedisStore = connectRedis(session);
-  let redis: Redis.Redis;
-  redis = new Redis(__redis__);
-
-  // if (!__prod__) {
-  //   redis = new Redis({
-  //     host: 'redis-16289.c239.us-east-1-2.ec2.cloud.redislabs.com:16289',
-  //     password: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
-  //     sentinelPassword: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
-  //     name: 'todofy-session',
-  //   });
-  // } else {
-  //   redis = new Redis({
-  //     host: process.env.REDIS!,
-  //     port: 16289,
-  //     password: '9AQGGdtJCyZyhqav4sI6EDuASG1ybPgq',
-  //   });
-  // }
 
   app.set('trust proxy', 1);
 
@@ -168,7 +149,7 @@ const main = async () => {
 
     let payload: any = null;
     try {
-      payload = verify(token, process.env.REFRESH_TOKEN_SECRET!);
+      payload = verify(token, process.env.REFRESH_TOKEN_SECRET as Secret);
     } catch (err) {
       logger.log(
         LogLevel.ERROR,
@@ -226,7 +207,7 @@ const main = async () => {
         'request.credentials': 'include',
       },
     },
-    context: ({ req, res }) => buildContext({ req, res, redis, User }),
+    context: ({ req, res }) => buildContext({ req, res, User }),
   });
 
   apolloServer.applyMiddleware({

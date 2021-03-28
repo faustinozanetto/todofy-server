@@ -18,4 +18,10 @@ export class UserResponse {
    */
   @Field(() => User, { nullable: true })
   user?: User;
+
+  /**
+   * Access token
+   */
+  @Field(() => String, { nullable: true })
+  accessToken?: string;
 }

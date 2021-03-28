@@ -8,9 +8,6 @@ import { TestResolver, TodoResolver, UserResolver } from './resolvers/index';
 import { Logger, LogLevel } from './logger/index';
 import { databaseOptions } from './database/index';
 import { createConnection } from 'typeorm';
-import session from 'express-session';
-//@ts-ignore
-import connectSqlite3 from 'connect-sqlite3';
 import {
   __cookie__,
   __origin__,
@@ -20,15 +17,14 @@ import {
   __refreshSecret__,
   __secret__,
 } from './utils/constants';
-//import * as jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-/*
-import { User } from './entities';
-import { createAccessToken, createRefreshToken } from './auth/auth';
-import { sendRefreshToken } from './auth/sendRefreshToken';
-*/
-import connectRedis from 'connect-redis';
+import passport from 'passport';
+import { buildContext } from 'graphql-passport';
 import Redis from 'ioredis';
+import { User } from './entities';
+import { createRefreshToken, createAccessToken } from './auth/auth';
+import { sendRefreshToken } from './auth/sendRefreshToken';
+import { verify } from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -45,7 +41,8 @@ const main = async () => {
 
   // Express app
   const app = express();
-  const RedisStore = connectRedis(session);
+  //app.use(passport.initialize());
+  //const RedisStore = connectRedis(session);
   let redis: Redis.Redis;
   redis = new Redis(__redis__);
 
@@ -74,13 +71,10 @@ const main = async () => {
     })
   );
 
+  /*
   app.use(
     session({
       name: __cookie__,
-      store: new RedisStore({
-        client: redis,
-        disableTouch: true,
-      }),
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
         httpOnly: true,
@@ -93,10 +87,53 @@ const main = async () => {
       resave: false,
     })
   );
+  */
 
   app.use(express.json());
 
   app.use(cookieParser());
+
+  /*
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  passport.use(
+    new GraphQLLocalStrategy(
+      async (username: any, password: any, done: any) => {
+        const user = await User.findOne({ where: { username: username } });
+        if (!user) {
+          return done('No user has been found with the given Username!', false);
+        }
+        try {
+          if (await argon2.verify(user.password, password)) {
+            return done(null, user);
+          } else {
+            return done('The password is not correct!', false);
+          }
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    )
+  );
+
+  passport.serializeUser((user, done) => {
+    //@ts-ignore
+    done(null, user.username);
+  });
+
+  passport.deserializeUser(async (username: string, done) => {
+    try {
+      const user = await User.findOne({ where: { username: username } });
+      if (user) {
+        return done(null, user);
+      }
+      return done('No user has been found with the given Username!', false);
+    } catch (err) {
+      done(err, null);
+    }
+  });
+  */
 
   app.use(
     express.urlencoded({
@@ -104,18 +141,26 @@ const main = async () => {
     })
   );
 
-  /*
+  app.post('/login', passport.authenticate('local'), (_req, res) => {
+    res.send('success');
+    res.send(res.getHeaders().authorization);
+  });
+
+  app.get('/user', (req, res) => {
+    res.send(req.user);
+  });
+
+  app.get('/logout', (req, res) => {
+    req.logout();
+    res.send('Logged out');
+  });
+
   app.get('/', (_req, res) => res.send('hello'));
   app.post('/refresh_token', async (req, res) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin);
-    res.header(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept'
-    );
     const token = req.cookies.jid;
     if (!token) {
       return res.send({
-        succeed: false,
+        ok: false,
         message: 'Could not find token',
         accessToken: '',
       });
@@ -123,14 +168,14 @@ const main = async () => {
 
     let payload: any = null;
     try {
-      payload = jwt.verify(token, __refreshSecret__!);
+      payload = verify(token, process.env.REFRESH_TOKEN_SECRET!);
     } catch (err) {
       logger.log(
         LogLevel.ERROR,
         'An error occurred while trying to get payload'
       );
       return res.send({
-        succeed: false,
+        ok: false,
         message: 'An error occurred while trying to get payload',
         accessToken: '',
       });
@@ -143,7 +188,7 @@ const main = async () => {
     if (!user) {
       logger.log(LogLevel.ERROR, 'User not found');
       return res.send({
-        succeed: false,
+        ok: false,
         message: 'Could not find user',
         accessToken: '',
       });
@@ -155,7 +200,7 @@ const main = async () => {
         'User token version different from payload version!'
       );
       return res.send({
-        succeed: false,
+        ok: false,
         message: 'User token version different from payload version!',
         accessToken: '',
       });
@@ -164,13 +209,12 @@ const main = async () => {
     sendRefreshToken(res, createRefreshToken(user));
 
     return res.send({
-      succeed: false,
+      ok: true,
       message: 'Successfully created access token!',
       accessToken: createAccessToken(user),
     });
   });
 
-  */
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
       resolvers: [TestResolver, UserResolver, TodoResolver],
@@ -182,7 +226,7 @@ const main = async () => {
         'request.credentials': 'include',
       },
     },
-    context: ({ req, res }) => ({ req, res, redis }),
+    context: ({ req, res }) => buildContext({ req, res, redis, User }),
   });
 
   apolloServer.applyMiddleware({

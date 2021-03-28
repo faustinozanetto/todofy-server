@@ -1,33 +1,40 @@
-import { Arg, Ctx, Int, Mutation, Query, Resolver } from 'type-graphql';
-import { UsersResponse, UserResponse, LoginResponse } from '../responses/user';
+import {
+  Arg,
+  Ctx,
+  Int,
+  Mutation,
+  Query,
+  Resolver,
+  UseMiddleware,
+} from 'type-graphql';
+import { UsersResponse, UserResponse } from '../responses/user';
 import { getConnection, getRepository } from 'typeorm';
-import { TodofyContext } from 'types';
+import { TodofyContext } from '../types';
 import { User } from '../entities';
 import { validateUserRegistration } from '../utils';
 import { UserCredentialsInput } from '../inputs';
 import argon2 from 'argon2';
 import { logger } from '../index';
 import { LogLevel } from '../logger';
+import { verify } from 'jsonwebtoken';
 import { __cookie__, __secret__ } from '../utils/constants';
 import { TodosResponse } from '../responses/todo/Todos';
-//import { sendRefreshToken } from '../auth/sendRefreshToken';
-//import { createAccessToken, createRefreshToken } from '../auth/auth';
-//import * as jwt from 'jsonwebtoken';
+import { sendRefreshToken } from '../auth/sendRefreshToken';
+import { createRefreshToken, createAccessToken } from '../auth/auth';
+import { isAuth } from '../middleawares/auth';
 
 @Resolver()
 export class UserResolver {
   @Query(() => UsersResponse)
-  async getUsers(): Promise<UsersResponse> {
-    const users = await User.find();
-    if (users) {
-      return {
-        users,
-      };
-    }
+  async users(): Promise<UsersResponse> {
+    return { users: await User.find() };
+  }
 
-    return {
-      errors: [{ field: 'users', message: 'Failed to retrieve Users!' }],
-    };
+  @Query(() => String)
+  @UseMiddleware(isAuth)
+  isAuthTest(@Ctx() { payload }: TodofyContext) {
+    console.log(payload);
+    return `your user id is: ${payload!.userId}`;
   }
 
   /**
@@ -38,8 +45,7 @@ export class UserResolver {
    */
   @Mutation(() => UserResponse)
   async register(
-    @Arg('input') input: UserCredentialsInput,
-    @Ctx() { req }: TodofyContext
+    @Arg('input') input: UserCredentialsInput
   ): Promise<UserResponse> {
     const errors = validateUserRegistration(input);
     if (errors) {
@@ -79,8 +85,6 @@ export class UserResolver {
       }
     }
 
-    req.session.userId = user.id;
-
     return { user };
   }
 
@@ -91,12 +95,13 @@ export class UserResolver {
    * @param ctx Todofy Context
    * @returns If credentials are correct, return the User
    */
-  @Mutation(() => LoginResponse)
+  @Mutation(() => UserResponse)
   async login(
-    @Arg('username') username: string,
-    @Arg('password') password: string,
-    @Ctx() { req }: TodofyContext
-  ): Promise<LoginResponse> {
+    @Arg('username', () => String) username: string,
+    @Arg('password', () => String) password: string,
+    @Ctx() { res }: TodofyContext
+  ): Promise<UserResponse> {
+    /*
     const user = await User.findOne({ where: { username } });
 
     // Username does not exist.
@@ -110,7 +115,7 @@ export class UserResolver {
         ],
       };
     }
-
+    /*
     // De-hashing password
     const validPassword = await argon2.verify(user.password, password);
     if (!validPassword) {
@@ -119,16 +124,53 @@ export class UserResolver {
       };
     }
 
-    /*
-    sendRefreshToken(res, createRefreshToken(user));
-
-    return { user, accessToken: createAccessToken(user) };
-    */
-    req.session.userId = user.id;
+    const token = jwt.sign({ email: user.email, id: user.id }, __secret__!, {
+      expiresIn: '1h',
+    });
 
     return {
       user,
+      accessToken: token,
     };
+    */
+
+    const user = await User.findOne({ where: { username } });
+
+    if (!user) {
+      throw new Error('could not find user');
+    }
+
+    const valid = await argon2.verify(user.password, password);
+
+    if (!valid) {
+      throw new Error('bad password');
+    }
+
+    // login successful
+
+    sendRefreshToken(res, createRefreshToken(user));
+
+    return {
+      accessToken: createAccessToken(user),
+      user,
+    };
+
+    // GRAPHQL AUTH
+    /*
+    try {
+      const { user } = await ctx.authenticate('graphql-local', {
+        username,
+        password,
+      });
+      //@ts-ignore
+      await ctx.login(user);
+      return { user };
+    } catch (error) {
+      return {
+        errors: [{ field: 'username', message: error }],
+      };
+    }
+    */
   }
 
   /**
@@ -137,19 +179,21 @@ export class UserResolver {
    * @returns True or False wether logout was successful or not.
    */
   @Mutation(() => Boolean)
-  async logout(@Ctx() { req, res }: TodofyContext): Promise<Boolean> {
-    return new Promise((resolve) =>
-      req.session.destroy((err) => {
-        res.clearCookie(__cookie__);
-        if (err) {
-          console.log(err);
-          resolve(false);
-          return;
-        }
-
-        resolve(true);
-      })
-    );
+  async logout(@Ctx() { res }: TodofyContext): Promise<Boolean> {
+    /*
+    try {
+      req.logOut();
+      return true;
+    } catch (error) {
+      logger.log(
+        LogLevel.ERROR,
+        'An error occurred while trying to log out user!'
+      );
+      return false;
+    }
+    */
+    sendRefreshToken(res, '');
+    return true;
   }
 
   /**
@@ -157,26 +201,37 @@ export class UserResolver {
    * @returns Current user logged in the page.
    */
   @Query(() => User, { nullable: true })
-  async me(@Ctx() { req }: TodofyContext) {
-    /*
-    const authorization = req.headers['authorization'];
+  async me(@Ctx() ctx: TodofyContext) {
+    /*  
+    const user = ctx.getUser();
+    console.log('Me query', user);
+
+    return user;
+    */
+    const authorization = ctx.req.headers['authorization'];
+
     if (!authorization) {
       return null;
     }
+
     try {
       const token = authorization.split(' ')[1];
-      const payload: any = jwt.verify(token, __secret__!);
-      return User.findOne(payload.userId);
-    } catch (error) {
-      logger.log(LogLevel.ERROR, error);
-      return null;
-    }*/
-
-    if (!req.session.userId) {
+      const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!);
+      console.log('Payload', payload);
+      return await User.findOne({ where: { id: payload.userId } });
+    } catch (err) {
+      console.log(err);
       return null;
     }
+  }
 
-    return User.findOne(req.session.userId);
+  @Mutation(() => Boolean)
+  async revokeRefreshTokenForUser(@Arg('id', () => Int) id: number) {
+    await getConnection()
+      .getRepository(User)
+      .increment({ id }, 'tokenVersion', 1);
+
+    return true;
   }
 
   /**

@@ -1,9 +1,8 @@
 import { User } from '../entities';
 import { sign } from 'jsonwebtoken';
-import { __refreshSecret__, __secret__ } from '../utils/constants';
 
 export const createAccessToken = (user: User) => {
-  return sign({ userId: user.id }, __secret__!, {
+  return sign({ userId: user.id }, process.env.ACCESS_TOKEN_SECRET!, {
     expiresIn: '15m',
   });
 };
@@ -11,7 +10,7 @@ export const createAccessToken = (user: User) => {
 export const createRefreshToken = (user: User) => {
   return sign(
     { userId: user.id, tokenVersion: user.tokenVersion },
-    __refreshSecret__!,
+    process.env.REFRESH_TOKEN_SECRET!,
     {
       expiresIn: '7d',
     }

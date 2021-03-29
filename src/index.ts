@@ -18,7 +18,6 @@ import {
   __secret__,
 } from './utils/constants';
 import dotenv from 'dotenv';
-import { buildContext } from 'graphql-passport';
 import { User } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
@@ -65,7 +64,7 @@ const main = async () => {
   );
   */
 
-  app.get('/', (_req, res) => res.send('hello'));
+  app.get('/', (req, res) => res.send(req.headers));
   app.post('/refresh_token', async (req, res) => {
     const token = req.cookies.jid;
     if (!token) {
@@ -135,7 +134,7 @@ const main = async () => {
         'request.credentials': 'include',
       },
     },
-    context: ({ req, res }) => buildContext({ req, res, User }),
+    context: ({ req, res }) => ({ req, res, User }),
   });
 
   apolloServer.applyMiddleware({

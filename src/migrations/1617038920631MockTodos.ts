@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class MockTodos1617038920630 implements MigrationInterface {
+export class MockTodos1617038920631 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
     insert into todos (title, description, "creatorId", completed, "createdAt") values ('Python, carpet', 'Vestibulum ac est lacinia nisi venenatis tristique. Fusce congue, diam id ornare imperdiet, sapien urna pretium nisl, ut volutpat sapien arcu sed augue. Aliquam erat volutpat.', 6, false, '2020-03-30T17:41:17Z');

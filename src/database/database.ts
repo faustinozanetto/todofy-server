@@ -34,6 +34,7 @@ export const databaseOptions = async () => {
         },
       },
       entities: [Todo, User],
+      migrations: [MockTodos1617038920631],
     };
   }
 

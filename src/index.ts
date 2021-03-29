@@ -22,6 +22,7 @@ import { User } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
 import { verify } from 'jsonwebtoken';
+import session from 'express-session';
 
 export const logger = new Logger('Todofy | ');
 
@@ -46,10 +47,10 @@ const main = async () => {
     })
   );
   app.use(cookieParser());
-  /*
+
   app.use(
     session({
-      name: __cookie__,
+      name: 'jid',
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
         httpOnly: true,
@@ -62,7 +63,6 @@ const main = async () => {
       resave: false,
     })
   );
-  */
 
   app.get('/', (req, res) => res.send(req.headers));
   app.post('/refresh_token', async (req, res) => {

@@ -28,7 +28,7 @@ import connectRedis from 'connect-redis';
 import { GraphQLError } from 'graphql';
 import cookieParser from 'cookie-parser';
 
-require('dotenv-safe').config();
+require('dotenv').config({ silent: true });
 
 export const logger = new Logger('Todofy | ');
 const RedisStore = connectRedis(session); // connect node.req.session to redis backing store

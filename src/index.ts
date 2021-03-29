@@ -1,8 +1,7 @@
 import 'reflect-metadata';
 import cors from 'cors';
 import express from 'express';
-import cookieParser from 'cookie-parser';
-import { ApolloServer } from 'apollo-server-express';
+import { ApolloError, ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
 import { TestResolver, TodoResolver, UserResolver } from './resolvers/index';
 import { Logger, LogLevel } from './logger/index';
@@ -18,17 +17,23 @@ import {
   __refreshSecret__,
   __secret__,
 } from './utils/constants';
-import dotenv from 'dotenv';
+import { v4 } from 'uuid';
 import { User } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
 import { verify } from 'jsonwebtoken';
-import session from 'express-session';
+import { redis } from './redis';
+import session, { SessionOptions } from 'express-session';
+import connectRedis from 'connect-redis';
+import { GraphQLError } from 'graphql';
+import cookieParser from 'cookie-parser';
+
+require('dotenv-safe').config();
 
 export const logger = new Logger('Todofy | ');
+const RedisStore = connectRedis(session); // connect node.req.session to redis backing store
 
 const main = async () => {
-  dotenv.config();
   const options = await databaseOptions();
   const connection = await createConnection(options);
 
@@ -45,27 +50,30 @@ const main = async () => {
   // Express cors middleware
   app.use(
     cors({
-      origin: __origin__,
+      origin: __origin__!,
       credentials: true,
     })
   );
 
-  app.use(
-    session({
-      name: 'jid',
-      cookie: {
-        httpOnly: true,
-        domain: __apiOrigin__,
-      },
-      saveUninitialized: false,
-      secret: __secret__!,
-      resave: false,
-    })
-  );
+  const sessionOption: SessionOptions = {
+    store: new RedisStore({
+      client: redis,
+    }),
+    name: 'qid',
+    secret: __secret__!,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    },
+  };
+
+  app.use(session(sessionOption));
 
   app.get('/', (req, res) => res.send(req.headers));
   app.post('/refresh_token', async (req, res) => {
-    const token = req.cookies.jid;
+    const token = req.cookies.qid;
     if (!token) {
       return res.send({
         ok: false,
@@ -134,6 +142,17 @@ const main = async () => {
       },
     },
     context: ({ req, res }) => ({ req, res, User }),
+    formatError: (error: GraphQLError) => {
+      if (error.originalError instanceof ApolloError) {
+        return error;
+      }
+
+      const errId = v4();
+      console.log('errId: ', errId);
+      console.log(error);
+
+      return new GraphQLError(`Internal Error: ${errId}`);
+    },
   });
 
   apolloServer.applyMiddleware({

@@ -21,7 +21,7 @@ export const __origin__ = __prod__
   : 'http://localhost:3000';
 
 export const __apiOrigin__ = __prod__
-  ? 'https://todofy-backend.herokuapp.com'
+  ? 'http://apitodofy.herokuapp.com'
   : 'http://localhost:4000';
 /**
  * Returns the secret used for express session.

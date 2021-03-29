@@ -1,12 +1,5 @@
 import Redis from 'ioredis';
 
-export const redis =
-  process.env.NODE_ENV === 'production'
-    ? new Redis({
-        host: process.env.REDIS_URL,
-        password: 'BBloOdjrh6XzAW9gSo9TAZGXmti6X2sL',
-      })
-    : new Redis({
-        host: process.env.REDIS_URL,
-        password: 'BBloOdjrh6XzAW9gSo9TAZGXmti6X2sL',
-      });
+export const redis = new Redis(
+  'rediss://:15815e42ed1d450ba916297ea70ce71e@usw1-definite-aphid-30676.upstash.io:30676'
+);

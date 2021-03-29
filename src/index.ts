@@ -38,6 +38,8 @@ const main = async () => {
 
   // Express app
   const app = express();
+  app.use(cookieParser());
+  app.set('trust proxy', true);
 
   // Express cors middleware
   app.use(
@@ -46,17 +48,14 @@ const main = async () => {
       credentials: true,
     })
   );
-  app.use(cookieParser());
 
   app.use(
     session({
       name: 'jid',
       cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
         httpOnly: true,
-        sameSite: 'lax', // csrf
         secure: __prod__, // cookie only works in https
-        domain: __prod__ ? '.codeponder.com' : undefined,
+        sameSite: true,
       },
       saveUninitialized: false,
       secret: __secret__!,

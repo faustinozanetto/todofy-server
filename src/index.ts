@@ -23,7 +23,6 @@ import { User } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
 import { verify } from 'jsonwebtoken';
-import bodyParser from 'body-parser';
 
 export const logger = new Logger('Todofy | ');
 
@@ -31,8 +30,6 @@ const main = async () => {
   dotenv.config();
   const options = await databaseOptions();
   const connection = await createConnection(options);
-
-  console.log(process.env);
 
   logger.log(
     LogLevel.INFO,
@@ -42,8 +39,6 @@ const main = async () => {
   // Express app
   const app = express();
 
-  app.use(bodyParser.json());
-
   // Express cors middleware
   app.use(
     cors({
@@ -51,7 +46,7 @@ const main = async () => {
       credentials: true,
     })
   );
-
+  app.use(cookieParser());
   /*
   app.use(
     session({
@@ -68,66 +63,6 @@ const main = async () => {
       resave: false,
     })
   );
-  */
-
-  app.use(cookieParser());
-
-  /*
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  passport.use(
-    new GraphQLLocalStrategy(
-      async (username: any, password: any, done: any) => {
-        const user = await User.findOne({ where: { username: username } });
-        if (!user) {
-          return done('No user has been found with the given Username!', false);
-        }
-        try {
-          if (await argon2.verify(user.password, password)) {
-            return done(null, user);
-          } else {
-            return done('The password is not correct!', false);
-          }
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    )
-  );
-
-  passport.serializeUser((user, done) => {
-    //@ts-ignore
-    done(null, user.username);
-  });
-
-  passport.deserializeUser(async (username: string, done) => {
-    try {
-      const user = await User.findOne({ where: { username: username } });
-      if (user) {
-        return done(null, user);
-      }
-      return done('No user has been found with the given Username!', false);
-    } catch (err) {
-      done(err, null);
-    }
-  });
-  */
-
-  /*
-  app.post('/login', passport.authenticate('local'), (_req, res) => {
-    res.send('success');
-    res.send(res.getHeaders().authorization);
-  });
-
-  app.get('/user', (req, res) => {
-    res.send(req.user);
-  });
-
-  app.get('/logout', (req, res) => {
-    req.logout();
-    res.send('Logged out');
-  });
   */
 
   app.get('/', (_req, res) => res.send('hello'));
@@ -180,8 +115,7 @@ const main = async () => {
         accessToken: '',
       });
     }
-    let refreshToken = createRefreshToken(user);
-    await sendRefreshToken(res, refreshToken);
+    sendRefreshToken(res, createRefreshToken(user));
 
     return res.send({
       ok: true,

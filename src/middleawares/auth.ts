@@ -1,19 +1,19 @@
 import { TodofyContext } from 'types';
 import { MiddlewareFn } from 'type-graphql';
-import { Secret, verify } from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
+import { __secret__ } from '../utils/constants';
 
 export const isAuth: MiddlewareFn<TodofyContext> = ({ context }, next) => {
-  const authorization = <string>context.req.headers['authorization'];
+  const authorization = <string>context.req.headers.authorization;
   if (!authorization) {
+    context.res.sendStatus(401);
     throw new Error('Invalid authorization');
   }
-
   try {
     const token = authorization.split(' ')[1];
-    const payload = verify(token, process.env.ACCESS_TOKEN_SECRET as Secret);
+    const payload = jwt.verify(token, __secret__!);
     context.payload = payload as any;
   } catch (err) {
-    context.res.status(401).send();
     console.log(err);
     throw new Error('not authenticated');
   }

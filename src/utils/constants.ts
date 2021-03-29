@@ -23,16 +23,14 @@ export const __origin__ = __prod__
 /**
  * Returns the secret used for express session.
  */
-export const __secret__ = __prod__
-  ? process.env.SESSION_TOKEN
-  : 'Lu4g0zTbPakiHx1RIAKx';
+export const __secret__ = __prod__ ? process.env.ACCESS_TOKEN_SECRET : 'secret';
 
 /**
  * Returns the secret used for refresh session.
  */
 export const __refreshSecret__ = __prod__
   ? process.env.REFRESH_TOKEN_SECRET
-  : 'Lu4g0zTb5454sd6Hx1RIAKx';
+  : 'refresh_secret';
 
 /**
  * Redis URI used for sessions

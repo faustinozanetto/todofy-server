@@ -16,7 +16,7 @@ import { UserCredentialsInput } from '../inputs';
 import argon2 from 'argon2';
 import { logger } from '../index';
 import { LogLevel } from '../logger';
-import { Secret, verify } from 'jsonwebtoken';
+import { verify } from 'jsonwebtoken';
 import { __cookie__, __secret__ } from '../utils/constants';
 import { TodosResponse } from '../responses/todo/Todos';
 import { sendRefreshToken } from '../auth/sendRefreshToken';
@@ -210,12 +210,6 @@ export class UserResolver {
    */
   @Query(() => User, { nullable: true })
   async me(@Ctx() ctx: TodofyContext) {
-    /*  
-    const user = ctx.getUser();
-    console.log('Me query', user);
-
-    return user;
-    */
     const authorization = ctx.req.headers['authorization'];
 
     if (!authorization) {
@@ -224,11 +218,7 @@ export class UserResolver {
 
     try {
       const token = authorization.split(' ')[1];
-      const payload: any = verify(
-        token,
-        process.env.ACCESS_TOKEN_SECRET as Secret
-      );
-      console.log('Payload', payload);
+      const payload: any = verify(token, __secret__!);
       return await User.findOne({ where: { id: payload.userId } });
     } catch (err) {
       console.log(err);

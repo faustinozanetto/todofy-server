@@ -22,7 +22,8 @@ import { buildContext } from 'graphql-passport';
 import { User } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
-import { Secret, verify } from 'jsonwebtoken';
+import { verify } from 'jsonwebtoken';
+import bodyParser from 'body-parser';
 
 export const logger = new Logger('Todofy | ');
 
@@ -40,6 +41,8 @@ const main = async () => {
 
   // Express app
   const app = express();
+
+  app.use(bodyParser.json());
 
   // Express cors middleware
   app.use(
@@ -140,7 +143,7 @@ const main = async () => {
 
     let payload: any = null;
     try {
-      payload = verify(token, process.env.REFRESH_TOKEN_SECRET as Secret);
+      payload = verify(token, __refreshSecret__!);
     } catch (err) {
       logger.log(
         LogLevel.ERROR,

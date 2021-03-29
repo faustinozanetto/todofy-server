@@ -1,12 +1,12 @@
 import { Response } from 'express';
-import { __origin__, __prod__ } from '../utils/constants';
+import { __apiOrigin__, __prod__ } from '../utils/constants';
 
 export const sendRefreshToken = (res: Response, token: string) => {
   res.cookie('jid', token, {
     httpOnly: true,
+    secure: false,
+    domain: __apiOrigin__,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
     path: '/refresh_token',
-    sameSite: true,
-    signed: false,
-    secure: __prod__, // cookie only works in https
   });
 };

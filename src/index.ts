@@ -9,6 +9,7 @@ import { Logger, LogLevel } from './logger/index';
 import { databaseOptions } from './database/index';
 import { createConnection } from 'typeorm';
 import {
+  __apiOrigin__,
   __cookie__,
   __origin__,
   __port__,
@@ -39,7 +40,7 @@ const main = async () => {
   // Express app
   const app = express();
   app.use(cookieParser());
-  app.set('trust proxy', true);
+  app.set('trust proxy', 1);
 
   // Express cors middleware
   app.use(
@@ -54,8 +55,7 @@ const main = async () => {
       name: 'jid',
       cookie: {
         httpOnly: true,
-        secure: __prod__, // cookie only works in https
-        sameSite: true,
+        domain: __apiOrigin__,
       },
       saveUninitialized: false,
       secret: __secret__!,

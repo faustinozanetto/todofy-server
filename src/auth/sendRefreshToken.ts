@@ -5,6 +5,7 @@ export const sendRefreshToken = (res: Response, token: string) => {
   res.cookie('qid', token, {
     httpOnly: true,
     secure: __prod__,
+    sameSite: 'lax',
     //maxAge: 1000 * 60 * 60 * 24 * 7,
     path: '/refresh_token',
   });

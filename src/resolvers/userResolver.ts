@@ -147,17 +147,21 @@ export class UserResolver {
     }
 
     // login successful
+    let refreshToken = createRefreshToken(user);
+    if (refreshToken) {
+      try {
+        await sendRefreshToken(res, refreshToken);
+      } catch (err) {
+        throw new Error(err);
+      }
+      let accessToken = createAccessToken(user);
 
-    try {
-      sendRefreshToken(res, createRefreshToken(user));
-    } catch (err) {
-      throw new Error(err);
+      return {
+        accessToken,
+        user,
+      };
     }
-
-    return {
-      accessToken: createAccessToken(user),
-      user,
-    };
+    return {};
 
     // GRAPHQL AUTH
     /*

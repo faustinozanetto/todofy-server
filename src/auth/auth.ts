@@ -9,7 +9,10 @@ export const createAccessToken = (user: User) => {
 
 export const createRefreshToken = (user: User) => {
   return sign(
-    { userId: user.id, tokenVersion: user.tokenVersion },
+    {
+      userId: user.id,
+      tokenVersion: user.tokenVersion,
+    },
     process.env.REFRESH_TOKEN_SECRET as Secret,
     {
       expiresIn: '7d',

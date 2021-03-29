@@ -18,7 +18,6 @@ import {
   __secret__,
 } from './utils/constants';
 import dotenv from 'dotenv';
-import passport from 'passport';
 import { buildContext } from 'graphql-passport';
 import { User } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
@@ -41,8 +40,6 @@ const main = async () => {
 
   // Express app
   const app = express();
-
-  app.set('trust proxy', 1);
 
   // Express cors middleware
   app.use(
@@ -69,8 +66,6 @@ const main = async () => {
     })
   );
   */
-
-  app.use(express.json());
 
   app.use(cookieParser());
 
@@ -116,12 +111,7 @@ const main = async () => {
   });
   */
 
-  app.use(
-    express.urlencoded({
-      extended: true,
-    })
-  );
-
+  /*
   app.post('/login', passport.authenticate('local'), (_req, res) => {
     res.send('success');
     res.send(res.getHeaders().authorization);
@@ -135,6 +125,7 @@ const main = async () => {
     req.logout();
     res.send('Logged out');
   });
+  */
 
   app.get('/', (_req, res) => res.send('hello'));
   app.post('/refresh_token', async (req, res) => {
@@ -186,8 +177,8 @@ const main = async () => {
         accessToken: '',
       });
     }
-
-    sendRefreshToken(res, createRefreshToken(user));
+    let refreshToken = createRefreshToken(user);
+    await sendRefreshToken(res, refreshToken);
 
     return res.send({
       ok: true,

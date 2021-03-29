@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import cors from 'cors';
 import express from 'express';
-import { ApolloError, ApolloServer } from 'apollo-server-express';
+import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
 import { TestResolver, TodoResolver, UserResolver } from './resolvers/index';
 import { Logger, LogLevel } from './logger/index';
@@ -17,15 +17,13 @@ import {
   __refreshSecret__,
   __secret__,
 } from './utils/constants';
-import { v4 } from 'uuid';
-import { User } from './entities';
+import { User, Todo } from './entities';
 import { createRefreshToken, createAccessToken } from './auth/auth';
 import { sendRefreshToken } from './auth/sendRefreshToken';
 import { verify } from 'jsonwebtoken';
 import { redis } from './redis';
 import session, { SessionOptions } from 'express-session';
 import connectRedis from 'connect-redis';
-import { GraphQLError } from 'graphql';
 import cookieParser from 'cookie-parser';
 
 require('dotenv').config({ silent: true });
@@ -36,6 +34,7 @@ const RedisStore = connectRedis(session); // connect node.req.session to redis b
 const main = async () => {
   const options = await databaseOptions();
   const connection = await createConnection(options);
+  await connection.runMigrations();
 
   logger.log(
     LogLevel.INFO,
@@ -141,18 +140,7 @@ const main = async () => {
         'request.credentials': 'include',
       },
     },
-    context: ({ req, res }) => ({ req, res, User }),
-    formatError: (error: GraphQLError) => {
-      if (error.originalError instanceof ApolloError) {
-        return error;
-      }
-
-      const errId = v4();
-      console.log('errId: ', errId);
-      console.log(error);
-
-      return new GraphQLError(`Internal Error: ${errId}`);
-    },
+    context: ({ req, res }) => ({ req, res, User, Todo }),
   });
 
   apolloServer.applyMiddleware({

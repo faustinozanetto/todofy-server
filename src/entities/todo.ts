@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from '../entities';
+import { User } from './user';
 
 @ObjectType()
 @Entity({ name: 'todos' })
@@ -29,8 +29,13 @@ export class Todo extends BaseEntity {
   @Column({ nullable: false })
   completed!: boolean;
 
-  @ManyToOne(() => User, (user: User) => user.todos)
-  user: User;
+  @Field(() => Int)
+  @Column()
+  creatorId: number;
+
+  @Field()
+  @ManyToOne(() => User, (user) => user.todos)
+  creator: User;
 
   @Field(() => String)
   @CreateDateColumn()

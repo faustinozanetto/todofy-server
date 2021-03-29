@@ -1,6 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { Session, SessionData } from 'express-session';
-import { User } from './entities';
 
 export interface RequestCustom extends Request {
   username?: string;
@@ -16,12 +15,4 @@ export interface TodofyContext {
   };
   res: Response;
   payload?: { userId: string };
-  next: NextFunction;
-  authenticate: (
-    type: string,
-    credentials: any
-  ) => Promise<{
-    user: User;
-    info: string;
-  }>;
 }

@@ -28,8 +28,8 @@ export class User extends BaseEntity {
   @Column()
   password!: string;
 
-  @OneToMany(() => Todo, (todo: Todo) => todo.user)
-  todos: Array<Todo>;
+  @OneToMany(() => Todo, (todo) => todo.creator)
+  todos: Todo[];
 
   @Column('int', { default: 0 })
   tokenVersion: number;

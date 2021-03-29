@@ -13,6 +13,9 @@ export class TodosResponse {
   @Field(() => [FieldError], { nullable: true })
   errors?: FieldError[];
 
-  @Field(() => [Todo], { nullable: true })
-  todos?: Todo[];
+  @Field(() => [Todo])
+  todos: Todo[];
+
+  @Field(() => Boolean)
+  hasMore: boolean;
 }

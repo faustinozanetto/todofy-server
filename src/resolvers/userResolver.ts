@@ -10,7 +10,7 @@ import {
 import { UsersResponse, UserResponse } from '../responses/user';
 import { getConnection, getRepository } from 'typeorm';
 import { TodofyContext } from '../types';
-import { User } from '../entities';
+import { Todo, User } from '../entities';
 import { validateUserRegistration } from '../utils';
 import { UserCredentialsInput } from '../inputs';
 import argon2 from 'argon2';
@@ -231,21 +231,74 @@ export class UserResolver {
    * @param param0
    */
   @Query(() => TodosResponse)
-  async userTodos(@Arg('id', () => Int) id: number): Promise<TodosResponse> {
-    const user = await getRepository(User).findOne(id, {
-      relations: ['todos'],
-    });
+  @UseMiddleware(isAuth)
+  async userTodos(
+    @Arg('limit', () => Int) limit: number,
+    @Arg('cursor', () => String, { nullable: true }) cursor: string | null,
+    @Ctx() { payload }: TodofyContext
+  ): Promise<TodosResponse> {
+    const realLimit = Math.min(50, limit);
+    const reaLimitPlusOne = realLimit + 1;
 
-    if (!user) {
-      return {
-        errors: [
-          { field: 'user', message: 'Could not found user with that ID!' },
-        ],
-      };
+    let replacements: any[] = [];
+    replacements.push(reaLimitPlusOne);
+    replacements.push(payload?.userId);
+
+    if (cursor) {
+      replacements.push(new Date(parseInt(cursor)));
+    }
+    // Pushing current user id into replacements.
+
+    console.log('REPLACEMENTS: ', replacements);
+
+    const query = getRepository(Todo)
+      .createQueryBuilder('todo')
+      .select()
+      .where('todo.creatorId = :creatorId', { creatorId: replacements[1] });
+
+    // If cursor is provided, sort by date
+    if (replacements[2]) {
+      query.where('todo.createdAt < :createdAt', {
+        createdAt: replacements[2],
+      });
     }
 
+    const results = await query
+      .orderBy('todo.createdAt', 'DESC')
+      .limit(replacements[0])
+      .getMany();
+
+    console.log(results);
+
+    /*
+    const todos = await getConnection().query(
+      `
+    SELECT t.*
+    FROM todos t
+    ${cursor ? `WHERE t."createdAt" < $2` : ''}
+    ${cursor ? `WHERE t."creatorId" = $3` : `WHERE t."creatorId" = $2`}
+    order by t."createdAt" DESC
+    limit $1
+    `,
+      replacements
+    );
+    */
+
+    if (results) {
+      return {
+        todos: results.slice(0, realLimit),
+        hasMore: results.length === reaLimitPlusOne,
+      };
+    }
     return {
-      todos: user.todos,
+      errors: [
+        {
+          field: 'todos',
+          message: 'Failed to retrieve todos',
+        },
+      ],
+      todos: [],
+      hasMore: false,
     };
   }
 }

@@ -1,4 +1,4 @@
-import { Field, InputType, Int } from 'type-graphql';
+import { Field, InputType } from 'type-graphql';
 
 @InputType()
 export class TodoCreateInput {
@@ -10,7 +10,4 @@ export class TodoCreateInput {
 
   @Field(() => Boolean)
   completed: boolean;
-
-  @Field(() => Int)
-  user: number;
 }

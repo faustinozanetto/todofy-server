@@ -1,4 +1,4 @@
-import { Field, Int, ObjectType } from 'type-graphql';
+import { Field, Int, ObjectType } from 'type-graphql'
 import {
   BaseEntity,
   Column,
@@ -7,8 +7,9 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { User } from './user';
+} from 'typeorm'
+
+import { User } from './user'
 
 @ObjectType()
 @Entity({ name: 'todos' })

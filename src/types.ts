@@ -1,10 +1,5 @@
-import { Request, Response } from 'express';
-import { Session, SessionData } from 'express-session';
-
-export interface RequestCustom extends Request {
-  username?: string;
-  password?: string;
-}
+import { Request, Response } from 'express'
+import { Session, SessionData } from 'express-session'
 
 /**
  * Todofy Context containing some type declarations for cleaner code such as Request and Session.

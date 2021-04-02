@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import * as jwt from 'jsonwebtoken';
-import { __secret__ } from '../utils/constants';
+import * as jwt from 'jsonwebtoken'
+import { NextFunction, Request, Response } from 'express'
+
+import { __secret__ } from '../utils/constants'
 
 export const checkJwt = (req: Request, res: Response, next: NextFunction) => {
   //Get the jwt token from the head

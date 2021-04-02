@@ -1,6 +1,7 @@
-import { ObjectType, Field } from 'type-graphql';
-import { Todo } from '../../entities';
-import { FieldError } from '../FieldError';
+import { Field, ObjectType } from 'type-graphql'
+
+import { Todo } from '../../entities'
+import { FieldError } from '../FieldError'
 
 /**
  * Response used when running the User Todos Query.

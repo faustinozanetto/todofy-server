@@ -1,5 +1,6 @@
-import { ObjectType, Field } from 'type-graphql';
-import { FieldError } from '../FieldError';
+import { Field, ObjectType } from 'type-graphql'
+
+import { FieldError } from '../FieldError'
 
 /**
  * Response used when running User Related queries.

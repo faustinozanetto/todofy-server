@@ -1,7 +1,8 @@
-import { MockTodos1617038920631 } from '../migrations/1617038920631MockTodos';
-import { ConnectionOptions } from 'typeorm';
-import { Todo, User } from '../entities/index';
-import { __dbUrl__, __prod__ } from '../utils/constants';
+import { ConnectionOptions } from 'typeorm'
+
+import { MockTodos1617038920631 } from '../migrations/1617038920631MockTodos'
+import { Todo, User } from '../entities/index'
+import { __dbUrl__, __prod__ } from '../utils/constants'
 
 /**
  *

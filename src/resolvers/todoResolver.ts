@@ -1,21 +1,11 @@
-import {
-  Arg,
-  Ctx,
-  Int,
-  Mutation,
-  Query,
-  Resolver,
-  UseMiddleware,
-} from 'type-graphql';
-import {
-  TodoResponse,
-  TodosResponse,
-  TodoDeleteResponse,
-} from '../responses/todo';
-import { Todo } from '../entities';
-import { TodoCreateInput, TodoDeleteInput } from '../inputs/todo';
-import { isAuth } from '../middleawares/auth';
-import { TodofyContext } from '../types';
+import { Arg, Ctx, Int, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql'
+import { getConnection } from 'typeorm'
+
+import { TodoDeleteResponse, TodoResponse, TodosResponse } from '../responses/todo'
+import { Todo } from '../entities'
+import { TodoCreateInput, TodoDeleteInput } from '../inputs/todo'
+import { isAuth } from '../middleawares/auth'
+import { TodofyContext } from '../types'
 
 @Resolver()
 export class TodoResolver {
@@ -38,7 +28,6 @@ export class TodoResolver {
         ],
       };
     }
-
     return { todo };
   }
 
@@ -77,19 +66,6 @@ export class TodoResolver {
     @Arg('input') input: TodoCreateInput,
     @Ctx() { payload }: TodofyContext
   ): Promise<TodoResponse> {
-    /*
-    const user = await User.findOne(input.user);
-    if (!user) {
-      return {
-        errors: [
-          {
-            field: 'todo',
-            message: 'Could not find a User with the given id!',
-          },
-        ],
-      };
-    }
-    */
     return {
       todo: await Todo.create({
         ...input,
@@ -111,5 +87,31 @@ export class TodoResolver {
   ): Promise<TodoDeleteResponse> {
     await Todo.delete({ id: input.id, creatorId: parseInt(payload?.userId!) });
     return { deleted: true };
+  }
+
+  @Mutation(() => TodoResponse, { nullable: true })
+  @UseMiddleware(isAuth)
+  async updateTodo(
+    @Arg('id', () => Int) id: number,
+    @Arg('title') title: string,
+    @Arg('description') description: string,
+    @Arg('completed') completed: boolean,
+    @Ctx() { payload }: TodofyContext
+  ): Promise<TodoResponse | null> {
+    const result = await getConnection()
+      .createQueryBuilder()
+      .update(Todo)
+      .set({ title, description, completed })
+      .where('id = :id and "creatorId" = :creatorId', {
+        id,
+        completed,
+        creatorId: payload?.userId,
+      })
+      .returning('*')
+      .execute();
+
+    return {
+      todo: result.raw[0],
+    };
   }
 }

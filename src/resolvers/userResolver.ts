@@ -1,28 +1,21 @@
-import {
-  Arg,
-  Ctx,
-  Int,
-  Mutation,
-  Query,
-  Resolver,
-  UseMiddleware,
-} from 'type-graphql';
-import { UsersResponse, UserResponse } from '../responses/user';
-import { getConnection, getRepository } from 'typeorm';
-import { TodofyContext } from '../types';
-import { Todo, User } from '../entities';
-import { validateUserRegistration } from '../utils';
-import { UserCredentialsInput } from '../inputs';
-import argon2 from 'argon2';
-import { logger } from '../index';
-import { LogLevel } from '../logger';
-import { verify } from 'jsonwebtoken';
-import { __cookie__, __secret__ } from '../utils/constants';
-import { TodosResponse } from '../responses/todo/Todos';
-import { sendRefreshToken } from '../auth/sendRefreshToken';
-import { createRefreshToken, createAccessToken } from '../auth/auth';
-import { isAuth } from '../middleawares/auth';
+import { Arg, Ctx, Int, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql'
+import { getConnection, getRepository } from 'typeorm'
+import { verify } from 'jsonwebtoken'
 
+import { UserResponse, UsersResponse } from '../responses/user'
+import { TodofyContext } from '../types'
+import { Todo, User } from '../entities'
+import { validateUserRegistration } from '../utils'
+import { UserCredentialsInput } from '../inputs'
+import { logger } from '../index'
+import { LogLevel } from '../logger'
+import { __cookie__, __secret__ } from '../utils/constants'
+import { TodosResponse } from '../responses/todo/Todos'
+import { sendRefreshToken } from '../auth/sendRefreshToken'
+import { createAccessToken, createRefreshToken } from '../auth/auth'
+import { isAuth } from '../middleawares/auth'
+
+import argon2 from 'argon2';
 @Resolver()
 export class UserResolver {
   @Query(() => UsersResponse)
@@ -101,10 +94,8 @@ export class UserResolver {
     @Arg('password', () => String) password: string,
     @Ctx() { res }: TodofyContext
   ): Promise<UserResponse> {
-    /*
     const user = await User.findOne({ where: { username } });
 
-    // Username does not exist.
     if (!user) {
       return {
         errors: [
@@ -115,35 +106,13 @@ export class UserResolver {
         ],
       };
     }
-    /*
-    // De-hashing password
-    const validPassword = await argon2.verify(user.password, password);
-    if (!validPassword) {
-      return {
-        errors: [{ field: 'password', message: 'Password does not match!' }],
-      };
-    }
-
-    const token = jwt.sign({ email: user.email, id: user.id }, __secret__!, {
-      expiresIn: '1h',
-    });
-
-    return {
-      user,
-      accessToken: token,
-    };
-    */
-
-    const user = await User.findOne({ where: { username } });
-
-    if (!user) {
-      throw new Error('could not find user');
-    }
 
     const valid = await argon2.verify(user.password, password);
 
     if (!valid) {
-      throw new Error('bad password');
+      return {
+        errors: [{ field: 'password', message: 'Password does not match!' }],
+      };
     }
 
     // login successful
@@ -153,23 +122,6 @@ export class UserResolver {
       accessToken: createAccessToken(user),
       user,
     };
-
-    // GRAPHQL AUTH
-    /*
-    try {
-      const { user } = await ctx.authenticate('graphql-local', {
-        username,
-        password,
-      });
-      //@ts-ignore
-      await ctx.login(user);
-      return { user };
-    } catch (error) {
-      return {
-        errors: [{ field: 'username', message: error }],
-      };
-    }
-    */
   }
 
   /**
@@ -179,18 +131,6 @@ export class UserResolver {
    */
   @Mutation(() => Boolean)
   async logout(@Ctx() { res }: TodofyContext): Promise<Boolean> {
-    /*
-    try {
-      req.logOut();
-      return true;
-    } catch (error) {
-      logger.log(
-        LogLevel.ERROR,
-        'An error occurred while trying to log out user!'
-      );
-      return false;
-    }
-    */
     sendRefreshToken(res, '');
     return true;
   }
@@ -247,10 +187,8 @@ export class UserResolver {
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)));
     }
-    // Pushing current user id into replacements.
 
-    console.log('REPLACEMENTS: ', replacements);
-
+    // Creating the query
     const query = getRepository(Todo)
       .createQueryBuilder('todo')
       .select()
@@ -263,27 +201,13 @@ export class UserResolver {
       });
     }
 
+    // Finally ordering by created date and parsing the limit value.
     const results = await query
       .orderBy('todo.createdAt', 'DESC')
       .limit(replacements[0])
       .getMany();
 
-    console.log(results);
-
-    /*
-    const todos = await getConnection().query(
-      `
-    SELECT t.*
-    FROM todos t
-    ${cursor ? `WHERE t."createdAt" < $2` : ''}
-    ${cursor ? `WHERE t."creatorId" = $3` : `WHERE t."creatorId" = $2`}
-    order by t."createdAt" DESC
-    limit $1
-    `,
-      replacements
-    );
-    */
-
+    // If we found results, return
     if (results) {
       return {
         todos: results.slice(0, realLimit),

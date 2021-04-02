@@ -1,12 +1,18 @@
-import 'reflect-metadata';
-import cors from 'cors';
-import express from 'express';
-import { ApolloServer } from 'apollo-server-express';
-import { buildSchema } from 'type-graphql';
-import { TestResolver, TodoResolver, UserResolver } from './resolvers/index';
-import { Logger, LogLevel } from './logger/index';
-import { databaseOptions } from './database/index';
-import { createConnection } from 'typeorm';
+import 'reflect-metadata'
+
+import connectRedis from 'connect-redis'
+import cookieParser from 'cookie-parser'
+import cors from 'cors'
+import express from 'express'
+import session, { SessionOptions } from 'express-session'
+import { ApolloServer } from 'apollo-server-express'
+import { buildSchema } from 'type-graphql'
+import { createConnection } from 'typeorm'
+import { verify } from 'jsonwebtoken'
+
+import { TestResolver, TodoResolver, UserResolver } from './resolvers/index'
+import { Logger, LogLevel } from './logger/index'
+import { databaseOptions } from './database/index'
 import {
   __apiOrigin__,
   __cookie__,
@@ -16,15 +22,11 @@ import {
   __redis__,
   __refreshSecret__,
   __secret__,
-} from './utils/constants';
-import { User, Todo } from './entities';
-import { createRefreshToken, createAccessToken } from './auth/auth';
-import { sendRefreshToken } from './auth/sendRefreshToken';
-import { verify } from 'jsonwebtoken';
-import { redis } from './redis';
-import session, { SessionOptions } from 'express-session';
-import connectRedis from 'connect-redis';
-import cookieParser from 'cookie-parser';
+} from './utils/constants'
+import { Todo, User } from './entities'
+import { createAccessToken, createRefreshToken } from './auth/auth'
+import { sendRefreshToken } from './auth/sendRefreshToken'
+import { redis } from './redis'
 
 require('dotenv').config({ silent: true });
 
@@ -64,7 +66,9 @@ const main = async () => {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
+      sameSite: 'none',
+      path: '/refresh_token',
     },
   };
 

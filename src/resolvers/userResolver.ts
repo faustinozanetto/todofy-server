@@ -1,19 +1,27 @@
-import { Arg, Ctx, Int, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql'
-import { getConnection, getRepository } from 'typeorm'
-import { verify } from 'jsonwebtoken'
+import {
+  Arg,
+  Ctx,
+  Int,
+  Mutation,
+  Query,
+  Resolver,
+  UseMiddleware,
+} from 'type-graphql';
+import { getConnection, getRepository } from 'typeorm';
+import { verify } from 'jsonwebtoken';
 
-import { UserResponse, UsersResponse } from '../responses/user'
-import { TodofyContext } from '../types'
-import { Todo, User } from '../entities'
-import { validateUserRegistration } from '../utils'
-import { UserCredentialsInput } from '../inputs'
-import { logger } from '../index'
-import { LogLevel } from '../logger'
-import { __cookie__, __secret__ } from '../utils/constants'
-import { TodosResponse } from '../responses/todo/Todos'
-import { sendRefreshToken } from '../auth/sendRefreshToken'
-import { createAccessToken, createRefreshToken } from '../auth/auth'
-import { isAuth } from '../middleawares/auth'
+import { UserResponse, UsersResponse } from '../responses/user';
+import { TodofyContext } from '../types';
+import { Todo, User } from '../entities';
+import { validateUserRegistration } from '../utils';
+import { UserCredentialsInput } from '../inputs';
+import { logger } from '../index';
+import { LogLevel } from '../logger';
+import { __cookie__, __secret__ } from '../utils/constants';
+import { TodosResponse } from '../responses/todo/Todos';
+import { sendRefreshToken } from '../auth/sendRefreshToken';
+import { createAccessToken, createRefreshToken } from '../auth/auth';
+import { isAuth } from '../middleawares/auth';
 
 import argon2 from 'argon2';
 @Resolver()
